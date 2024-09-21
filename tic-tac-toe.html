@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe with AI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            color: #ffffff;
+        }
+        #game-selection, #tictactoe-container {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        #game-selection:hover, #tictactoe-container:hover {
+            transform: translateY(-5px);
+        }
+        h1 {
+            color: #ffffff;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        button {
+            margin: 10px;
+            padding: 12px 24px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background-color: #00bcd4;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        button:hover {
+            background-color: #00acc1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        #tictactoe-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5em;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            color: #ffffff;
+        }
+        .cell:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        .cell:active {
+            transform: scale(0.95);
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 1.5em;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        #reset-game {
+            background-color: #ff4081;
+        }
+        #reset-game:hover {
+            background-color: #f50057;
+        }
+        #hint-button {
+            background-color: #ffc107;
+        }
+        #hint-button:hover {
+            background-color: #ffa000;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .difficulty-selector {
+            margin-bottom: 20px;
+        }
+
+        .difficulty-selector label {
+            margin-right: 10px;
+            color: #ffffff;
+        }
+
+        @keyframes winAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .win-animation {
+            animation: winAnimation 0.5s ease-in-out 3;
+        }
+
+        #score-tracker {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .dark-mode #game-selection,
+        .dark-mode #tictactoe-container {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        #dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #ffd700;
+            color: #333;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #dark-mode-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    <canvas id="confetti-canvas"></canvas>
+    <button id="dark-mode-toggle">🌓</button>
+
+    <div id="game-selection">
+        <h1>Select a Game</h1>
+        <button id="tic-tac-toe-button">Tic-Tac-Toe</button>
+    </div>
+
+    <div id="tictactoe-container" style="display: none;">
+        <h1>Tic-Tac-Toe</h1>
+        <div id="score-tracker">
+            <span>Player X: <span id="score-x">0</span></span>
+            <span>Ties: <span id="score-ties">0</span></span>
+            <span>Player O: <span id="score-o">0</span></span>
+        </div>
+        <div class="difficulty-selector">
+            <label for="difficulty">AI Difficulty:</label>
+            <select id="difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+        </div>
+        <div id="tictactoe-board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <p id="status">Player X's turn</p>
+        <button id="reset-game">Reset Game</button>
+        <button id="hint-button">Hint</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+        const ticTacToeButton = document.getElementById('tic-tac-toe-button');
+        const tictactoeContainer = document.getElementById('tictactoe-container');
+        const cells = document.querySelectorAll('.cell');
+        const statusDisplay = document.getElementById('status');
+        const resetButton = document.getElementById('reset-game');
+        const hintButton = document.getElementById('hint-button');
+        let currentPlayer = 'X';
+        let gameState = ['', '', '', '', '', '', '', '', ''];
+        let gameActive = true;
+
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const scoreX = document.getElementById('score-x');
+        const scoreTies = document.getElementById('score-ties');
+        const scoreO = document.getElementById('score-o');
+
+        let scores = {
+            X: 0,
+            O: 0,
+            ties: 0
+        };
+
+        // Sound effects
+        const clickSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-simple-countdown-922.mp3');
+        const winSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3');
+        const drawSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-retro-arcade-lose-2027.mp3');
+
+        function playSound(sound) {
+            sound.currentTime = 0;
+            sound.play();
+        }
+
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+        });
+
+        function updateScores() {
+            scoreX.textContent = scores.X;
+            scoreTies.textContent = scores.ties;
+            scoreO.textContent = scores.O;
+        }
+
+        ticTacToeButton.addEventListener('click', () => {
+            document.getElementById('game-selection').style.display = 'none';
+            tictactoeContainer.style.display = 'block';
+            tictactoeContainer.classList.add('fade-in');
+            resetGame(); // Reset the game when starting
+        });
+
+        function handleCellClick(clickedCellEvent) {
+            const clickedCell = clickedCellEvent.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+            if (gameState[clickedCellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            gameState[clickedCellIndex] = currentPlayer;
+            clickedCell.textContent = currentPlayer;
+            clickedCell.classList.add('fade-in');
+
+            checkResult();
+
+            if (gameActive) {
+                currentPlayer = 'O'; // AI's turn
+                aiMove();
+            }
+
+            playSound(clickSound);
+        }
+
+        function minimax(newGameState, player) {
+            const availableCells = newGameState.map((cell, index) => cell === '' ? index : null).filter(index => index !== null);
+            
+            // Check for terminal states
+            for (let condition of winningConditions) {
+                const [a, b, c] = condition;
+                if (newGameState[a] && newGameState[a] === newGameState[b] && newGameState[a] === newGameState[c]) {
+                    return newGameState[a] === 'O' ? 10 : -10; // AI wins: +10, Player wins: -10
+                }
+            }
+            if (availableCells.length === 0) {
+                return 0; // Draw
+            }
+
+            let bestScore = player === 'O' ? -Infinity : Infinity;
+
+            for (let index of availableCells) {
+                newGameState[index] = player; // Make the move
+                let score = minimax(newGameState, player === 'O' ? 'X' : 'O'); // Alternate player
+                newGameState[index] = ''; // Undo the move
+
+                if (player === 'O') {
+                    bestScore = Math.max(score, bestScore);
+                } else {
+                    bestScore = Math.min(score, bestScore);
+                }
+            }
+            return bestScore;
+        }
+
+        function aiMove() {
+            const difficulty = document.getElementById('difficulty').value;
+            let bestMove;
+
+            if (difficulty === 'easy') {
+                bestMove = getRandomMove();
+            } else if (difficulty === 'medium') {
+                bestMove = Math.random() < 0.5 ? getBestMove() : getRandomMove();
+            } else {
+                bestMove = getBestMove();
+            }
+
+            if (bestMove !== undefined) {
+                gameState[bestMove] = 'O'; // Make the best move
+                cells[bestMove].textContent = 'O';
+                cells[bestMove].classList.add('fade-in');
+                checkResult();
+                currentPlayer = 'X'; // Switch back to player
+            }
+        }
+
+        function getRandomMove() {
+            const availableCells = gameState.map((cell, index) => cell === '' ? index : null).filter(index => index !== null);
+            return availableCells[Math.floor(Math.random() * availableCells.length)];
+        }
+
+        function getBestMove() {
+            let bestScore = -Infinity;
+            let bestMove;
+
+            for (let index = 0; index < gameState.length; index++) {
+                if (gameState[index] === '') {
+                    gameState[index] = 'O'; // AI's move
+                    let score = minimax(gameState, 'X'); // Evaluate the move
+                    gameState[index] = ''; // Undo the move
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = index;
+                    }
+                }
+            }
+
+            return bestMove;
+        }
+
+        function checkResult() {
+            let roundWon = false;
+            let winningCells;
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                if (gameState[a] && gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
+                    roundWon = true;
+                    winningCells = [a, b, c];
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                statusDisplay.textContent = `Player ${currentPlayer} wins!`;
+                gameActive = false;
+                applyWinAnimation(winningCells);
+                playSound(winSound);
+                triggerConfetti();
+                scores[currentPlayer]++;
+                updateScores();
+                return;
+            }
+
+            if (!gameState.includes('')) {
+                statusDisplay.textContent = "It's a draw!";
+                gameActive = false;
+                playSound(drawSound);
+                scores.ties++;
+                updateScores();
+                return;
+            }
+
+            statusDisplay.textContent = `Player ${currentPlayer}'s turn`;
+        }
+
+        function resetGame() {
+            currentPlayer = 'X';
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            gameActive = true;
+            statusDisplay.textContent = `Player ${currentPlayer}'s turn`;
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('win-animation');
+            });
+        }
+
+        function suggestHint() {
+            const availableCells = gameState.map((cell, index) => cell === '' ? index : null).filter(index => index !== null);
+            for (let condition of winningConditions) {
+                const [a, b, c] = condition;
+                if (gameState[a] === currentPlayer && gameState[b] === currentPlayer && gameState[c] === '') {
+                    return c; // Suggest the winning move
+                }
+                if (gameState[a] === currentPlayer && gameState[c] === currentPlayer && gameState[b] === '') {
+                    return b; // Suggest the winning move
+                }
+                if (gameState[b] === currentPlayer && gameState[c] === currentPlayer && gameState[a] === '') {
+                    return a; // Suggest the winning move
+                }
+            }
+            return availableCells[Math.floor(Math.random() * availableCells.length)]; // Random available cell
+        }
+
+        hintButton.addEventListener('click', () => {
+            const hintIndex = suggestHint();
+            if (hintIndex !== undefined) {
+                alert(`Hint: You can place your 'X' in cell ${hintIndex + 1}`);
+            }
+        });
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        resetButton.addEventListener('click', resetGame);
+
+        // Particle background
+        particlesJS.load('particles-js', 'particles.json', function() {
+            console.log('particles.js loaded');
+        });
+
+        // Win animation
+        function applyWinAnimation(winningCells) {
+            winningCells.forEach(index => {
+                cells[index].classList.add('win-animation');
+            });
+        }
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    </script>
+</body>
+</html>
